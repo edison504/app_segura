@@ -7,7 +7,7 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   String? _userToken;
   final String _userName = "Edison y Nicolas"; // Nombre actualizado y formateado
-  final String _userName = "Carlos"; // Información personalizada
+  
 
   bool get isAuthenticated => _isAuthenticated;
   String get userName => _userName;
