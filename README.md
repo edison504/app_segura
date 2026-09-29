@@ -1,17 +1,19 @@
-# app_segura
+# App Segura
 
-A new Flutter project.
+Prototipo Flutter con autenticación simulada y captura de imágenes con la cámara.
 
-## Getting Started
+## Acceso de prueba
 
-This project is a starting point for a Flutter application.
+| Usuario | Contraseña |
+| --- | --- |
+| `edison` | `Edison123` |
+| `nicolas` | `Nicolas123` |
 
-A few resources to get you started if this is your first Flutter project:
+El usuario es indiferente a mayúsculas y espacios al inicio o al final; la
+contraseña distingue mayúsculas y debe tener al menos seis caracteres.
+Las cuentas existen solo dentro de la aplicación: no hay servidor ni API.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+La sesión se guarda mediante `flutter_secure_storage` y vence cinco minutos
+después de iniciar sesión. Al vencer, se cierra y se eliminan sus datos locales.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Para ejecutar: `flutter pub get` y `flutter run`.

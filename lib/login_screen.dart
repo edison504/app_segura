@@ -84,7 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.3),
@@ -101,8 +102,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             labelText: 'Usuario',
-                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF00C9FF)),
+                            labelStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7)),
+                            prefixIcon: const Icon(Icons.person_outline_rounded,
+                                color: Color(0xFF00C9FF)),
                             filled: true,
                             fillColor: Colors.black.withValues(alpha: 0.2),
                             border: OutlineInputBorder(
@@ -111,7 +114,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFF00C9FF), width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF00C9FF), width: 1.5),
                             ),
                           ),
                         ),
@@ -124,8 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: true,
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF00C9FF)),
+                            labelStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7)),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded,
+                                color: Color(0xFF00C9FF)),
                             filled: true,
                             fillColor: Colors.black.withValues(alpha: 0.2),
                             border: OutlineInputBorder(
@@ -134,7 +140,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFF00C9FF), width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF00C9FF), width: 1.5),
                             ),
                           ),
                         ),
@@ -152,17 +159,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               elevation: 6,
-                              shadowColor: const Color(0xFF00C9FF).withValues(alpha: 0.5),
+                              shadowColor: const Color(0xFF00C9FF)
+                                  .withValues(alpha: 0.5),
                             ),
                             onPressed: () async {
-                              bool success = await authProvider.login(
-                                _userController.text,
-                                _passController.text,
-                              );
-                              if (!success && mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                              final username = _userController.text.trim();
+                              final password = _passController.text;
+                              String? error;
+                              if (username.isEmpty) {
+                                error = 'Ingresa tu usuario';
+                              } else if (password.length < 6) {
+                                error =
+                                    'La contraseña debe tener al menos 6 caracteres';
+                              }
+
+                              if (error != null) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.removeCurrentSnackBar();
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text(error)),
+                                );
+                                return;
+                              }
+
+                              bool success =
+                                  await authProvider.login(username, password);
+                              if (!success && context.mounted) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.removeCurrentSnackBar();
+                                messenger.showSnackBar(
                                   SnackBar(
-                                    content: const Text('Credenciales incorrectas'),
+                                    content: const Text(
+                                        'Usuario o contraseña incorrectos'),
                                     backgroundColor: Colors.redAccent,
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
