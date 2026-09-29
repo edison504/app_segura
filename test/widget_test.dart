@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:app_segura/auth_provider.dart';
+import 'package:app_segura/auth_service.dart';
+import 'package:app_segura/home_screen.dart';
 import 'package:app_segura/login_screen.dart';
 import 'package:app_segura/main.dart';
 import 'package:flutter/material.dart';
@@ -37,10 +39,34 @@ class MemorySessionStorage implements SessionStorage {
 }
 
 void main() {
+  test('El servicio comprueba las cuentas y persiste un token temporal',
+      () async {
+    final storage = MemorySessionStorage();
+    var now = DateTime.utc(2026, 9, 28, 12);
+    final service = AuthService(storage: storage, now: () => now);
+
+    expect(await service.login('edison', 'incorrecta'), isNull);
+    expect(storage.values, isEmpty);
+    final session = await service.login(' EDISON ', 'Edison123');
+    expect(session?.username, 'edison');
+    expect(session?.token, matches(RegExp(r'^[0-9a-f]{64}$')));
+    expect(session?.expiresAt, now.add(const Duration(minutes: 5)));
+    expect(storage.values['session_token'], session?.token);
+    expect((await service.restoreSession())?.token, session?.token);
+
+    now = now.add(const Duration(minutes: 5));
+    expect(await service.restoreSession(), isNull);
+    expect(storage.values, isEmpty);
+    final nextSession = await service.login('nicolas', 'Nicolas123');
+    expect(nextSession?.token, isNot(session?.token));
+    await service.logout();
+    expect(storage.values, isEmpty);
+  });
+
   testWidgets('El login valida longitud y credenciales antes de entrar',
       (tester) async {
     final storage = MemorySessionStorage();
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     await auth.checkSession();
     await tester.pumpWidget(ChangeNotifierProvider.value(
       value: auth,
@@ -71,17 +97,42 @@ void main() {
     auth.dispose();
   });
 
+  testWidgets('El panel muestra solamente una parte del token en debug',
+      (tester) async {
+    final storage = MemorySessionStorage();
+    final auth = AuthProvider(service: AuthService(storage: storage));
+    await auth.checkSession();
+    expect(await auth.login('edison', 'Edison123'), isTrue);
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+      value: auth,
+      child: const MaterialApp(home: HomeScreen()),
+    ));
+
+    expect(
+        find.text('Token (debug): ${auth.debugTokenPreview}'), findsOneWidget);
+    expect(find.textContaining('Vence: '), findsOneWidget);
+    expect(find.textContaining(storage.values['session_token']!), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    auth.dispose();
+  });
+
   testWidgets('La sesión se recupera y vence tras cinco minutos',
       (tester) async {
     final storage = MemorySessionStorage();
     var now = DateTime.utc(2026, 9, 28, 12);
-    final auth = AuthProvider(storage: storage, now: () => now);
+    final auth = AuthProvider(
+      service: AuthService(storage: storage, now: () => now),
+      now: () => now,
+    );
     await auth.checkSession();
     expect(await auth.login('nicolas', 'Nicolas123'), isTrue);
     expect(auth.userName, 'Nicolas');
     auth.dispose();
 
-    final restored = AuthProvider(storage: storage, now: () => now);
+    final restored = AuthProvider(
+      service: AuthService(storage: storage, now: () => now),
+      now: () => now,
+    );
     await restored.checkSession();
     expect(restored.isAuthenticated, isTrue);
     expect(restored.userName, 'Nicolas');
@@ -97,13 +148,19 @@ void main() {
   testWidgets('Una sesión caducada no se restaura al reabrir', (tester) async {
     final storage = MemorySessionStorage();
     var now = DateTime.utc(2026, 9, 28, 12);
-    final auth = AuthProvider(storage: storage, now: () => now);
+    final auth = AuthProvider(
+      service: AuthService(storage: storage, now: () => now),
+      now: () => now,
+    );
     await auth.checkSession();
     expect(await auth.login('edison', 'Edison123'), isTrue);
     auth.dispose();
 
     now = now.add(const Duration(minutes: 6));
-    final reopened = AuthProvider(storage: storage, now: () => now);
+    final reopened = AuthProvider(
+      service: AuthService(storage: storage, now: () => now),
+      now: () => now,
+    );
     await reopened.checkSession();
     expect(reopened.isAuthenticated, isFalse);
     expect(storage.values, isEmpty);
@@ -113,7 +170,7 @@ void main() {
   testWidgets('La app espera la lectura de sesión antes de mostrar el login',
       (tester) async {
     final storage = MemorySessionStorage()..waitForRead = Completer<void>();
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     final checking = auth.checkSession();
     await tester.pumpWidget(ChangeNotifierProvider.value(
       value: auth,
@@ -133,7 +190,7 @@ void main() {
   testWidgets('El botón se bloquea mientras persiste la sesión',
       (tester) async {
     final storage = MemorySessionStorage();
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     await auth.checkSession();
     storage.waitForWrite = Completer<void>();
     await tester.pumpWidget(ChangeNotifierProvider.value(
@@ -158,7 +215,7 @@ void main() {
 
   testWidgets('Una falla al leer la sesión permite reintentar', (tester) async {
     final storage = MemorySessionStorage()..failReads = true;
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     await auth.checkSession();
     expect(auth.status, AuthStatus.error);
     await tester.pumpWidget(ChangeNotifierProvider.value(
@@ -178,7 +235,7 @@ void main() {
 
   testWidgets('Un error al guardar deja el login disponible', (tester) async {
     final storage = MemorySessionStorage();
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     await auth.checkSession();
     storage.failWrites = true;
     expect(await auth.login('edison', 'Edison123'), isFalse);
@@ -191,7 +248,7 @@ void main() {
   testWidgets('Al fallar el cierre se reintenta borrar la sesión',
       (tester) async {
     final storage = MemorySessionStorage();
-    final auth = AuthProvider(storage: storage);
+    final auth = AuthProvider(service: AuthService(storage: storage));
     await auth.checkSession();
     expect(await auth.login('nicolas', 'Nicolas123'), isTrue);
     storage.failDeletes = true;

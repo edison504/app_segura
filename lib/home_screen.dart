@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -165,6 +166,25 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 32),
+
+                        if (kDebugMode && authProvider.debugTokenPreview != null) ...[
+                          Text(
+                            'Token (debug): ${authProvider.debugTokenPreview}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Vence: ${authProvider.sessionExpiresAt!.toLocal().toString().split('.').first}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
 
                         // Botón principal de la cámara con diseño moderno
                         SizedBox(

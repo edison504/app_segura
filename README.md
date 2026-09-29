@@ -17,3 +17,8 @@ La sesión se guarda mediante `flutter_secure_storage` y vence cinco minutos
 después de iniciar sesión. Al vencer, se cierra y se eliminan sus datos locales.
 
 Para ejecutar: `flutter pub get` y `flutter run`.
+
+En `flutter run` (modo debug), el panel muestra los primeros caracteres del
+token y la hora local de vencimiento. El token completo no se presenta en
+pantalla; se conserva en `flutter_secure_storage` bajo la clave `session_token`.
+El panel de diagnóstico no aparece en builds de producción.
