@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       body: Container(
@@ -162,51 +162,60 @@ class _LoginScreenState extends State<LoginScreen> {
                               shadowColor: const Color(0xFF00C9FF)
                                   .withValues(alpha: 0.5),
                             ),
-                            onPressed: () async {
-                              final username = _userController.text.trim();
-                              final password = _passController.text;
-                              String? error;
-                              if (username.isEmpty) {
-                                error = 'Ingresa tu usuario';
-                              } else if (password.length < 6) {
-                                error =
-                                    'La contraseña debe tener al menos 6 caracteres';
-                              }
+                            onPressed: authProvider.status == AuthStatus.authenticating
+                                ? null
+                                : () async {
+                                    final username = _userController.text.trim();
+                                    final password = _passController.text;
+                                    String? error;
+                                    if (username.isEmpty) {
+                                      error = 'Ingresa tu usuario';
+                                    } else if (password.length < 6) {
+                                      error = 'La contraseña debe tener al menos 6 caracteres';
+                                    }
 
-                              if (error != null) {
-                                final messenger = ScaffoldMessenger.of(context);
-                                messenger.removeCurrentSnackBar();
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text(error)),
-                                );
-                                return;
-                              }
+                                    if (error != null) {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      messenger.removeCurrentSnackBar();
+                                      messenger.showSnackBar(
+                                        SnackBar(content: Text(error)),
+                                      );
+                                      return;
+                                    }
 
-                              bool success =
-                                  await authProvider.login(username, password);
-                              if (!success && context.mounted) {
-                                final messenger = ScaffoldMessenger.of(context);
-                                messenger.removeCurrentSnackBar();
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Usuario o contraseña incorrectos'),
-                                    backgroundColor: Colors.redAccent,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                                    final success = await authProvider.login(username, password);
+                                    if (!success && context.mounted) {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      messenger.removeCurrentSnackBar();
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(authProvider.errorMessage ??
+                                              'Usuario o contraseña incorrectos'),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            child: authProvider.status == AuthStatus.authenticating
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.black87,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Ingresar',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                );
-                              }
-                            },
-                            child: const Text(
-                              'Ingresar',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           ),
                         ),
                       ],
