@@ -97,6 +97,67 @@ void main() {
     auth.dispose();
   });
 
+  testWidgets('El formulario muestra errores junto a ambos campos vacíos',
+      (tester) async {
+    final auth = AuthProvider(
+      service: AuthService(storage: MemorySessionStorage()),
+    );
+    await auth.checkSession();
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+      value: auth,
+      child: const MaterialApp(home: LoginScreen()),
+    ));
+
+    await tester.tap(find.text('Ingresar'));
+    await tester.pump();
+    expect(find.text('Ingresa tu usuario'), findsOneWidget);
+    expect(find.text('La contraseña debe tener al menos 6 caracteres'),
+        findsOneWidget);
+    expect(auth.isAuthenticated, isFalse);
+    await tester.pumpWidget(const SizedBox());
+    auth.dispose();
+  });
+
+  testWidgets('La contraseña se alterna y el teclado permite enviar',
+      (tester) async {
+    final storage = MemorySessionStorage();
+    final auth = AuthProvider(service: AuthService(storage: storage));
+    await auth.checkSession();
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+      value: auth,
+      child: const MaterialApp(home: LoginScreen()),
+    ));
+
+    await tester.enterText(find.byType(TextField).at(0), '  nicolas  ');
+    await tester.enterText(find.byType(TextField).at(1), 'Nicolas123');
+    expect(tester.widget<TextField>(find.byType(TextField).at(1)).obscureText,
+        isTrue);
+    await tester.tap(find.byTooltip('Mostrar contraseña'));
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField).at(1)).obscureText,
+        isFalse);
+    await tester.tap(find.byTooltip('Ocultar contraseña'));
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField).at(1)).obscureText,
+        isTrue);
+
+    await tester.tap(find.byType(TextField).at(0));
+    await tester.testTextInput.receiveAction(TextInputAction.next);
+    await tester.pump();
+    expect(
+        tester
+            .widget<TextField>(find.byType(TextField).at(1))
+            .focusNode!
+            .hasFocus,
+        isTrue);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.userName, 'Nicolas');
+    await tester.pumpWidget(const SizedBox());
+    auth.dispose();
+  });
+
   testWidgets('El panel muestra solamente una parte del token en debug',
       (tester) async {
     final storage = MemorySessionStorage();
